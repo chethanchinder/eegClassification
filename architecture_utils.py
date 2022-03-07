@@ -26,10 +26,13 @@ import matplotlib.pyplot as plt
 
 from torch.nn.modules.activation import ReLU
 from torch.nn.modules import dropout
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
 #Writing my own dataset class that inherits pytorchs dataset class 
 # https://pytorch.org/vision/stable/datasets.html
+
+import csv
+import pandas as pd
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 class Dataset(torch.utils.data.Dataset):
   def __init__(self,X,y):
     self.X=torch.from_numpy(X).float().to(device)
@@ -78,13 +81,12 @@ def torch_data_loader(X_train,y_train,X_test,y_test, X_valid=[], y_valid=[],b_si
 
 
 """
-for i in range(2):
 
 Function to train per epoch it takes model which is a nn.Module() type an optimizer which torch.optim() type
 https://pytorch.org/docs/stable/optim.html for more details, Loss function is the default Loss function
 Trainining data loader of torch.utils.Data loader type
 """
-def train_per_epoch(model,optimizer,train_loader,loss_func=nn.CrossEntropyLoss(),printevery=10):
+def train_per_epoch(model,optimizer,train_loader,loss_func=nn.CrossEntropyLoss(),printevery=10,verbose=True):
   
   #put model in train mode
   model.train()
@@ -114,10 +116,10 @@ def train_per_epoch(model,optimizer,train_loader,loss_func=nn.CrossEntropyLoss()
     #last_loss is the lass fof last batch
     last_loss=loss_val.item()
     # Print some info for every 10 batches
-    
-    if (idx%(printevery) == 0):
-      print('In training#####:batches completed={}/{}'.format(idx+1,len(train_loader)), 'The value of loss is {}'.format(running_loss/(printevery)))
-      running_loss=0
+    if verbose:
+      if (idx%(printevery) == 0):
+        print('In training#####:batches completed={}/{}'.format(idx+1,len(train_loader)), 'The value of loss is {}'.format(running_loss/(printevery)))
+        running_loss=0
 
   return model,last_loss
 
@@ -149,8 +151,8 @@ def test_model(model,data_loader,loss_func=nn.CrossEntropyLoss(),print_every=10,
       # print('batches completed={}/{}'.format(idx+1,len(data_loader)), "The value of "+mode+" accuracy is {}".format(accuracy_score(y_actual_np,y_pred_np)))
       running_loss=0
   
-  print('epochs_completed={}'.format(epoch_no), "The value of loss "+mode+" is {}".format(last_loss/(idx+1)))
-  print('epochs completed={}'.format(epoch_no), "The value of "+mode+" accuracy is {}".format(total_correct/(len(data_loader.dataset))))
+  print('In testing######### epochs_completed={}'.format(epoch_no), "The value of loss "+mode+" is {}".format(last_loss/(idx+1)))
+  print('In testing######### epochs completed={}'.format(epoch_no), "The value of "+mode+" accuracy is {}".format(total_correct/(len(data_loader.dataset))))
     #Returns lastloss and overall accuracy
   return  (last_loss/(idx+1)),(total_correct/(len(data_loader.dataset)))
   
@@ -198,7 +200,7 @@ def train_multi_epochs(model,optimizer,all_data_loader,loss_func=nn.CrossEntropy
   return best_model,max_test_accu,eval_metrics
 
 
-def plot_train_test_curves(eval_metrics):
+def plot_train_test_curves(eval_metrics,save_path=''):
   plt.figure(1)
   plt.title("Loss vs num epochs")
   plt.ylabel("Loss")
@@ -208,6 +210,8 @@ def plot_train_test_curves(eval_metrics):
   plt.plot(x_range,eval_metrics['val_loss_hist'], label='Validation')
   plt.plot(x_range,eval_metrics['test_loss_hist'], label='Test')
   plt.legend(loc='best')
+  if len(save_path)>0:
+    plt.savefig(save_path+'_loss.png')
   plt.show()
 
   plt.figure(2)
@@ -219,9 +223,20 @@ def plot_train_test_curves(eval_metrics):
   plt.plot(x_range,eval_metrics['val_loss_accuracy'], label='Validation')
   plt.plot(x_range,eval_metrics['test_loss_accuracy'], label='Test')
   plt.legend(loc='best')
+  if len(save_path)>0:
+    plt.savefig(save_path+'_accuracy.png')
   plt.show()
 
-
+def save_eval_metrics(eval_metrics,save_path=''):
+  if len(save_path)>0:
+    key_list=["test_loss_hist","train_loss_hist","val_loss_hist","train_loss_accuracy","val_loss_accuracy","test_loss_accuracy"]
+    op=[]
+    for key in key_list:
+      op.append(eval_metrics[key])
+    pd.DataFrame(np.asarray(op).T,columns=key_list).to_csv(save_path+'.csv')
+      
+  else:
+    pass
 
 
 
