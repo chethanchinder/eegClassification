@@ -150,7 +150,7 @@ class data_augmenter(object):
         X_fil=filtfilt(b, a, X)
         X_fil_fft=np.fft.fft(X_fil, axis=2)
         X_final=np.concatenate((np.absolute(X_fil_fft),np.angle(X_fil_fft)),axis=1)
-        return X_final
+        return X_final,X_fil
 
                 
 
