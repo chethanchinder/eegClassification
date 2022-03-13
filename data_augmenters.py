@@ -4,8 +4,10 @@ Created on Wed Mar  2 23:31:57 2022
 
 @author: rakshith
 """
-
+from scipy import signal
+import matplotlib.pyplot as plt
 import numpy as np
+from scipy.signal import butter,filtfilt
 
 class data_augmenter(object):
     """ 
@@ -70,7 +72,7 @@ class data_augmenter(object):
 
     def sub_sample_maxpool_freq(self,X,y,sub_sample=2,average=2,noise=2):
         X_fft_time=np.fft.fft(X,axis=2)
-
+        X_fft_time=np.absolute(X_fft_time)
         N=X_fft_time.shape[2]
         time_bins=np.arange(X_fft_time.shape[2])
         print(X_fft_time.shape)
@@ -110,8 +112,47 @@ class data_augmenter(object):
                 
             
         print('Shape of X after subsampling and concatenating:',total_X.shape)
-        return np.absolute(total_X),np.absolute(total_y)
+        return total_X,total_y
+    
+    def notchfil(self,X):
+        notch_freq = 50.0
+        samp_freq = 250
+        quality_factor = 50.0 
+        b_notch_50, a_notch_50 = signal.iirnotch(notch_freq, quality_factor, samp_freq)
+        notch_freq=100
+        quality_factor = 100.0 
+        b_notch_100, a_notch_100 = signal.iirnotch(notch_freq, quality_factor, samp_freq)
+#        freq, h = signal.freqz(b_notch_100, a_notch_100, fs = samp_freq)
+ #       plt.figure('filter')
+     #   plt.plot( freq, 20*np.log10(abs(h)))
+        #y_notched = signal.filtfilt(b_notch, a_notch, y_pure)
+        X = signal.filtfilt(b_notch_50, a_notch_50, X)
+        X = signal.filtfilt(b_notch_100, a_notch_100, X)
+        return X
+    
+    def lowpass_notch(self,X,cutoff=75,order=3):
+        # Idea : Notch filtering at 50 , 100 and pass that to low pass filter at 
+        notch_freq = 50.0
+        samp_freq = 250
+        quality_factor = 50.0 
+        b_notch_50, a_notch_50 = signal.iirnotch(notch_freq, quality_factor, samp_freq)
+        X = signal.filtfilt(b_notch_50, a_notch_50, X)
+        notch_freq=100
+        quality_factor = 100.0 
+        b_notch_100, a_notch_100 = signal.iirnotch(notch_freq, quality_factor, samp_freq)
+        X = signal.filtfilt(b_notch_100, a_notch_100, X)
+        #Low pass filtering operation
+        fs=250
+        nyq=0.5*fs
+        normal_cutoff = cutoff / nyq
+        # Get the filter coefficients 
+        b, a = butter(order, normal_cutoff, btype='low', analog=False)
+        X_fil=filtfilt(b, a, X)
+        X_fil_fft=np.fft.fft(X_fil, axis=2)
+        X_final=np.concatenate((np.absolute(X_fil_fft),np.angle(X_fil_fft)),axis=1)
+        return X_final
 
+                
 
 
       
