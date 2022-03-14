@@ -55,14 +55,15 @@ class data_init_loader(object):
         return X_train,X_valid,y_train,y_valid,person_train,person_valid
     
 
-    def make_subject_arr(X,y,person_array,person=0):
+    def make_subject_arr(self,X,y,person_array,person=0):
         """
         Given a train and label arrays just return train and label arrays based on the person
         Input X,y, person_array,person
         Output X,y corresponding to that particular person
         """
-        pers_idx=np.argwhere(person_array.flatten()==person)
-        X_person=X[pers_idx]
+        pers_idx=np.argwhere(person_array.flatten()==person).flatten()
+        #print("Person Index shape : ",pers_idx.shape)
+        X_person=X[pers_idx,:,:]
         y_person=y[pers_idx]
         return X_person,y_person   
     
